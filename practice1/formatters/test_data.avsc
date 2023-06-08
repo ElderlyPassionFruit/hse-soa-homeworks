@@ -1,0 +1,18 @@
+{
+    "type": "record",
+    "name": "TestData",
+    "fields": [
+        {"name": "int", "type": "int"},
+        {"name": "float", "type": "float"},
+        {"name": "string", "type": "string"},
+        {"name": "bool", "type": "boolean"},
+        {
+            "name": "dict",
+            "type": {
+                "type": "map",
+                "values": "string"
+            }
+        },
+        {"name": "list", "type": {"type": "array", "items": "string"}}
+    ]
+}

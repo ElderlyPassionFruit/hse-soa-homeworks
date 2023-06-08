@@ -1,0 +1,15 @@
+asyncio==3.4.3
+avro-python3==1.10.2
+beautifulsoup4==4.12.2
+certifi==2023.5.7
+charset-normalizer==3.1.0
+dicttoxml==1.7.16
+google==3.0.0
+idna==3.4
+msgpack==1.0.5
+protobuf==4.23.2
+PyYAML==6.0
+requests==2.31.0
+soupsieve==2.4.1
+urllib3==2.0.3
+xmltodict==0.13.0

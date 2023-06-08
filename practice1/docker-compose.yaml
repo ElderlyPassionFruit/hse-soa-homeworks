@@ -1,0 +1,87 @@
+services:
+  native:
+    image: elderlypassionfruit/soa1-env
+
+    environment:
+      ITERS: 1234
+      MULTICAST_ADDR: 230.0.0.1
+      MULTICAST_PORT: 9999
+      FORMAT: "native"
+
+    command: python3 start_server.py
+  json:
+    image: elderlypassionfruit/soa1-env
+
+    environment:
+      ITERS: 1234
+      MULTICAST_ADDR: 230.0.0.1
+      MULTICAST_PORT: 9999
+      FORMAT: "json"
+
+    command: python3 start_server.py
+
+  xml:
+    image: elderlypassionfruit/soa1-env
+
+    environment:
+      ITERS: 1234
+      MULTICAST_ADDR: 230.0.0.1
+      MULTICAST_PORT: 9999
+      FORMAT: "xml"
+
+    command: python3 start_server.py
+
+  yaml:
+    image: elderlypassionfruit/soa1-env
+
+    environment:
+      ITERS: 1234
+      MULTICAST_ADDR: 230.0.0.1
+      MULTICAST_PORT: 9999
+      FORMAT: "yaml"
+
+    command: python3 start_server.py
+
+  messagepack:
+    image: elderlypassionfruit/soa1-env
+
+    environment:
+      ITERS: 1234
+      MULTICAST_ADDR: 230.0.0.1
+      MULTICAST_PORT: 9999
+      FORMAT: "messagepack"
+
+    command: python3 start_server.py
+
+  gpb:
+    image: elderlypassionfruit/soa1-env
+
+    environment:
+      ITERS: 1234
+      MULTICAST_ADDR: 230.0.0.1
+      MULTICAST_PORT: 9999
+      FORMAT: "gpb"
+
+    command: python3 start_server.py
+
+  apacheavro:
+    image: elderlypassionfruit/soa1-env
+
+    environment:
+      ITERS: 1234
+      MULTICAST_ADDR: 230.0.0.1
+      MULTICAST_PORT: 9999
+      FORMAT: "apacheavro"
+
+    command: python3 start_server.py
+
+  proxy:
+    image: elderlypassionfruit/soa1-env
+    ports:
+      - "2000:2000/udp"
+
+    environment:
+      MULTICAST_ADDR: 230.0.0.1
+      MULTICAST_PORT: 9999
+
+    command: python3 start_proxy.py
