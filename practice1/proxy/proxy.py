@@ -25,6 +25,10 @@ class ProxyProtocol(asyncio.DatagramProtocol):
 
         match message["message_type"]:
             case "get_result":
+                if not "formats" in message:
+                    return
+                if len(message) != 2:
+                    return
                 message["addr"] = addr
                 unicast_message = serialize(message)
                 for format in message["formats"]:
@@ -33,6 +37,8 @@ class ProxyProtocol(asyncio.DatagramProtocol):
                     logging.info("send message %s to %s", unicast_message, serialize(
                         (format, self.backend_port)))
             case "get_result_all":
+                if len(message) != 1:
+                    return
                 multicast_message = serialize(
                     {"message_type": "get_result_all", "addr": addr})
                 self.transport.sendto(
@@ -40,6 +46,10 @@ class ProxyProtocol(asyncio.DatagramProtocol):
                 logging.info("send message %s to %s",
                              multicast_message, str(self.multicast_addr))
             case "return_result":
+                if not "addr" in message or not "test_result" in message:
+                    return
+                if len(message) != 3:
+                    return
                 self.transport.sendto(message["test_result"].encode(
                 ), (message["addr"][0], message["addr"][1]))
                 logging.info("send message with result to, %s",
