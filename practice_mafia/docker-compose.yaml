@@ -1,0 +1,43 @@
+version: "3.3"
+
+services:
+  server:
+    image: elderlypassionfruit/soa2-env
+    ports:
+      - 50051:50051/tcp
+
+    environment:
+      GAME_SIZE: 4
+
+    command: python3 start_server.py
+
+  bot1:
+    image: elderlypassionfruit/soa2-env
+
+    environment:
+      IS_BOT: 1
+
+    command: python3 start_client.py
+    depends_on:
+      - server
+
+  bot2:
+    image: elderlypassionfruit/soa2-env
+    environment:
+      IS_BOT: 1
+
+    command: python3 start_client.py
+
+    depends_on:
+      - server
+
+  bot3:
+    image: elderlypassionfruit/soa2-env
+
+    environment:
+      IS_BOT: 1
+
+    command: python3 start_client.py
+
+    depends_on:
+      - server

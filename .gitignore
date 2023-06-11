@@ -1,0 +1,5 @@
+.practice1_env/
+.practice_mafia_env/
+__pycache__
+test_client.py
+.vscode/

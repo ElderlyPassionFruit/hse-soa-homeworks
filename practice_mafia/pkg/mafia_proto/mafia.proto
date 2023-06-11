@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+service MafiaServer {
+    rpc Subscribe(SubscribeRequest) returns (stream SubscribeResponse);
+    rpc DoVote(Vote) returns (Nothing);
+    rpc DoFinishDay(FinishDay) returns (FinishDayResponse);
+    rpc DoWaitNextDay(WaitNextDay) returns (WaitNextDayResponse);
+    rpc DoMafiaVote(Vote) returns (Nothing);
+    rpc DoCopCheck(Check) returns (CheckResponse);
+}
+
+message SubscribeRequest {
+    string login = 1;
+}
+
+enum SubscribeResponseType {
+    Ack = 0;
+    NewPlayer = 1;
+    Start = 2;
+}
+
+message SubscribeResponse {
+    message Ack {
+        int64 game_id = 1;
+    }
+    message NewPlayer {
+        string login = 1;
+    }
+    message Start {
+        string role = 1;
+        repeated string players = 2;
+    }
+    oneof response {
+        Ack ack = 1;
+        NewPlayer new_player = 2;
+        Start start = 3;
+    }
+}
+
+message Vote {
+    int64 game_id = 1;
+    string login_from = 2;
+    string login_to = 3;
+}
+
+message Nothing {
+}
+
+message FinishDay {
+    int64 game_id = 1;
+    string login = 2;
+}
+
+message FinishDayResponse {
+    string killed_login = 1;
+    int32 winner = 2;
+}
+
+message WaitNextDay {
+    int64 game_id = 1;
+    string login = 2;
+}
+
+message WaitNextDayResponse {
+    int64 day = 1;
+    repeated string alive_players = 2;
+    string killed_login = 3;
+    int32 winner = 4;
+}
+
+message Check {
+    int64 game_id = 1;
+    string login = 2;
+}
+
+message CheckResponse {
+    string role = 1;
+}
