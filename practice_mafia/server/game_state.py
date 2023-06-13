@@ -30,6 +30,8 @@ class Game:
         self.waited = 0
         self.cond_waited = Condition()
 
+        self.mafia_votes = [None] * game_size
+
     def IsStarded(self):
         return len(self.players) == self.game_size
 
@@ -43,12 +45,13 @@ class Game:
         return self.IsStarded()
 
     def InitRoles(self):
-        cnt_mafias = 1
+        cnt_mafias = (self.game_size + 3) // 4
         cnt_cops = 1
         cnt_civilians = self.game_size - cnt_mafias
         seed(time())
         shuffled_players = self.players.copy()
-        shuffle(shuffled_players)
+        while "bot" in shuffled_players[0] or "bot" in shuffled_players[1]:
+            shuffle(shuffled_players)
         mafias = shuffled_players[:cnt_mafias]
         shuffled_players = shuffled_players[cnt_mafias:]
         cops = shuffled_players[:cnt_cops]
@@ -86,27 +89,27 @@ class Game:
 
         with self.cond_vote:
             self.vote[self.players.index(login_from)] = login_to
-            if self.IsVoteFinished():
-                cnt = {}
-                for login in self.vote:
-                    if not login in self.players:
-                        continue
-                    if not login in cnt:
-                        cnt[login] = 0
-                    cnt[login] += 1
-                max_login = "_"
-                for login in cnt:
-                    if max_login == "_" or cnt[max_login] < cnt[login]:
-                        max_login = login
-                self.killed_login = max_login
-                if max_login in self.players:
-                    self.alive[self.players.index(max_login)] = False
-                self.cond_vote.notify_all()
 
-            while self.killed_login == None:
-                logging.info(
-                    f"Game {self.game_id}, {login_from} is wating for finishing voting stage")
-                self.cond_vote.wait()
+    def GenDayKilledLogin(self):
+        if self.day == 0:
+            self.killed_login = "_"
+            return
+        assert (self.IsVoteFinished())
+        cnt = {}
+        for login in self.vote:
+            if not login in self.players:
+                continue
+            assert (login in self.GetAlivePlayers())
+            if not login in cnt:
+                cnt[login] = 0
+            cnt[login] += 1
+        max_login = "_"
+        for login in cnt:
+            if max_login == "_" or cnt[max_login] < cnt[login]:
+                max_login = login
+        self.killed_login = max_login
+        if max_login in self.players:
+            self.alive[self.players.index(max_login)] = False
 
     def FinishDay(self, login):
         logging.info(
@@ -115,7 +118,8 @@ class Game:
         with self.cond_finished:
             self.finished += 1
             if self.finished % self.game_size == 0:
-                self.night_killed = "_"
+                self.GenDayKilledLogin()
+                self.mafia_votes = [None] * self.game_size
                 self.cond_finished.notify_all()
 
             while self.finished % self.game_size != 0:
@@ -123,6 +127,23 @@ class Game:
                     f"Game {self.game_id}, {login} is wating for finishing finish day stage")
                 self.cond_finished.wait()
             return self.killed_login
+
+    def GenNightKilledLogin(self):
+        assert (self.IsMafiaVoteFinished())
+        cnt = {}
+        for login in self.mafia_votes:
+            if not login in self.players:
+                continue
+            if not login in cnt:
+                cnt[login] = 0
+            cnt[login] += 1
+        max_login = "_"
+        for login in cnt:
+            if max_login == "_" or cnt[max_login] < cnt[login]:
+                max_login = login
+        self.night_killed = max_login
+        if max_login in self.players:
+            self.alive[self.players.index(max_login)] = False
 
     def WaitNextDay(self, login):
         logging.info(
@@ -132,8 +153,8 @@ class Game:
 
             self.waited += 1
             if self.waited % self.game_size == 0:
-                self.killed_login = None
                 self.vote = [None] * self.game_size
+                self.GenNightKilledLogin()
                 self.cond_waited.notify_all()
                 self.day += 1
 
@@ -157,8 +178,14 @@ class Game:
             f"Game {self.game_id}, day {self.day}, mafia kill {login_from} -> {login_to}")
         assert (login_from in self.GetAlivePlayers())
         assert (login_to in self.GetAlivePlayers())
-        self.night_killed = login_to
-        self.alive[self.players.index(login_to)] = False
+        assert (self.roles[login_from] == Role.Mafia)
+        self.mafia_votes[self.players.index(login_from)] = login_to
+
+    def IsMafiaVoteFinished(self):
+        for alive in self.GetAlivePlayers():
+            if self.roles[alive] == Role.Mafia and self.mafia_votes[self.players.index(alive)] == None:
+                return False
+        return True
 
     def GetNightKilled(self):
         return self.night_killed

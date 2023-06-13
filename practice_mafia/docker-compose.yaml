@@ -1,6 +1,12 @@
 version: "3.3"
 
 services:
+  message_queue:
+    image: rabbitmq:3.12-management
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+
   server:
     image: elderlypassionfruit/soa2-env
     ports:
@@ -10,34 +16,18 @@ services:
       GAME_SIZE: 4
 
     command: python3 start_server.py
+    depends_on:
+      - message_queue
 
-  bot1:
+  bot:
     image: elderlypassionfruit/soa2-env
 
     environment:
       IS_BOT: 1
 
+    scale: 3
+
     command: python3 start_client.py
     depends_on:
       - server
-
-  bot2:
-    image: elderlypassionfruit/soa2-env
-    environment:
-      IS_BOT: 1
-
-    command: python3 start_client.py
-
-    depends_on:
-      - server
-
-  bot3:
-    image: elderlypassionfruit/soa2-env
-
-    environment:
-      IS_BOT: 1
-
-    command: python3 start_client.py
-
-    depends_on:
-      - server
+    restart: always

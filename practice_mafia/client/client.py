@@ -6,15 +6,18 @@ from enum import Enum
 from random import randint
 from os import getenv
 from time import sleep
+from chat_lib.messenger import Messenger
 
 
 class DayCommandType(Enum):
     Vote = 0
     Finish = 1
+    Message = 2
 
 
 class NightCommandType(Enum):
     DoAction = 0
+    Message = 2
 
 
 class Client:
@@ -61,6 +64,10 @@ class Client:
             elif response.HasField('start'):
                 self.role = eval(response.start.role)
                 self.alive_players = response.start.players
+                self.day_messenger = Messenger(self.login, self.game_id * 2)
+                if self.role == Role.Mafia:
+                    self.night_messenger = Messenger(
+                        self.login, self.game_id * 2 + 1)
                 print(f"Ваша роль в этой игре: {self.role}")
             else:
                 raise ValueError("Unknown type")
@@ -85,14 +92,20 @@ class Client:
                         print("Некорректный воод, попробуйте ещё раз")
                         continue
                     return [DayCommandType.Finish]
-                elif len(data) == 2:
-                    if not self.can_vote:
+                elif len(data) >= 2:
+                    if len(data) == 2 and data[0] == "vote":
+                        if not self.can_vote:
+                            print("Некорректный воод, попробуйте ещё раз")
+                            continue
+                        if not data[1].isnumeric() or int(data[1]) < 0 or int(data[1]) >= len(self.alive_players):
+                            print("Некорректный воод, попробуйте ещё раз")
+                            continue
+                        return [DayCommandType.Vote, self.alive_players[int(data[1])]]
+                    elif data[0] == "message":
+                        return [DayCommandType.Message, " ".join(data[1:])]
+                    else:
                         print("Некорректный воод, попробуйте ещё раз")
                         continue
-                    if data[0] != "vote" or not data[1].isnumeric() or int(data[1]) < 0 or int(data[1]) >= len(self.alive_players):
-                        print("Некорректный воод, попробуйте ещё раз")
-                        continue
-                    return [DayCommandType.Vote, self.alive_players[int(data[1])]]
                 else:
                     print("Некорректный воод, попробуйте ещё раз")
                     continue
@@ -130,11 +143,12 @@ class Client:
             return False
         else:
             print("Вам нужно совершить какое-то действие. Доступный набор команд:")
+            print(
+                "message {#message}, чтобы отправить сообщение в чать где в качестве {#message} нужно написать сообщение, которое вы хотите отправить")
             if self.can_vote:
                 print("vote {#id}, чтобы проголосовать за убийство, где в качестве {#id} требуется указать текущий id игрока, которого вы хотите убить на этом ходу.")
             else:
                 print("finish, чтобы закончить этот ход")
-            # print("chat, чтобы пообщаться в чате с другими игроками (пока не работает)")
             command = self.ReadDayCommand()
             if command[0] == DayCommandType.Vote:
                 self.can_vote = False
@@ -148,6 +162,9 @@ class Client:
                 response = self.stub.DoFinishDay(finish_day)
                 self.ProcessKilledLogin(response.killed_login, response.winner)
                 return False
+            elif command[0] == DayCommandType.Message:
+                self.day_messenger.SendMessage(command[1])
+                return True
 
     def ReadNightCommand(self):
         if self.is_bot:
@@ -157,14 +174,20 @@ class Client:
         else:
             while True:
                 data = input().split()
-                if len(data) == 2:
-                    if not self.can_do_action:
+                if len(data) >= 2:
+                    if len(data) == 2 and data[0] == "action":
+                        if not self.can_do_action:
+                            print("Некорректный воод, попробуйте ещё раз")
+                            continue
+                        if not data[1].isnumeric() or int(data[1]) < 0 or int(data[1]) >= len(self.alive_players):
+                            print("Некорректный воод, попробуйте ещё раз")
+                            continue
+                        return [NightCommandType.DoAction, self.alive_players[int(data[1])]]
+                    elif data[0] == "message":
+                        return [NightCommandType.Message, " ".join(data[1:])]
+                    else:
                         print("Некорректный воод, попробуйте ещё раз")
                         continue
-                    if data[0] != "action" or not data[1].isnumeric() or int(data[1]) < 0 or int(data[1]) >= len(self.alive_players):
-                        print("Некорректный воод, попробуйте ещё раз")
-                        continue
-                    return [NightCommandType.DoAction, self.alive_players[int(data[1])]]
                 else:
                     print("Некорректный воод, попробуйте ещё раз")
                     continue
@@ -175,13 +198,19 @@ class Client:
         else:
             print("Введите команду:")
             print(
+                "message {#message}, чтобы отправить сообщение в чать где в качестве {#message} нужно написать сообщение, которое вы хотите отправить. Ваше сообщение увидят только другие мафии.")
+            print(
                 "action {#id}, чтобы убить игрока, где в качестве {#id} требуется указать текущий id игрока, которого вы хотите убить на этом ходу.")
             command = self.ReadNightCommand()
-            self.can_do_action = False
-            vote = pb2.Vote(game_id=self.game_id,
-                            login_from=self.login, login_to=command[1])
-            response = self.stub.DoMafiaVote(vote)
-            return False
+            if command[0] == NightCommandType.DoAction:
+                self.can_do_action = False
+                vote = pb2.Vote(game_id=self.game_id,
+                                login_from=self.login, login_to=command[1])
+                response = self.stub.DoMafiaVote(vote)
+                return False
+            elif command[0] == NightCommandType.Message:
+                self.night_messenger.SendMessage(command[1])
+                return True
 
     def ProcessCopNightCommand(self):
         if not self.alive:
