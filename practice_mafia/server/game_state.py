@@ -50,8 +50,7 @@ class Game:
         cnt_civilians = self.game_size - cnt_mafias
         seed(time())
         shuffled_players = self.players.copy()
-        while "bot" in shuffled_players[0] or "bot" in shuffled_players[1]:
-            shuffle(shuffled_players)
+        shuffle(shuffled_players)
         mafias = shuffled_players[:cnt_mafias]
         shuffled_players = shuffled_players[cnt_mafias:]
         cops = shuffled_players[:cnt_cops]

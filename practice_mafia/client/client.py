@@ -280,7 +280,7 @@ class Client:
 def main():
     is_bot = getenv("IS_BOT")
     if not is_bot is None and int(is_bot) == 1:
-        sleep(5)
+        sleep(10)
         client = Client(is_bot=True)
         client.ReadLogin()
         client.StartGame()
